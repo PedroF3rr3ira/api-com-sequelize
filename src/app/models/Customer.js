@@ -20,11 +20,18 @@ class Customer extends Model {
         sequelize,
         tableName: "customers",
         modelName: "Customer",
+        scopes: {
+          active: {
+            where: {
+              status: "ACTIVE",
+            },
+          },
+        },
       }
     );
   }
 
-  static associations(models) {
+  static associate(models) {
     this.hasMany(models.Contact);
   }
 }
