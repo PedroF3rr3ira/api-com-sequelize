@@ -1,4 +1,4 @@
-import { Model, DataTypes } from "sequelize";
+import { Model, DataTypes, Op } from "sequelize";
 
 class Customer extends Model {
   static init(sequelize) {
@@ -25,6 +25,20 @@ class Customer extends Model {
             where: {
               status: "ACTIVE",
             },
+          },
+          created(date) {
+            return {
+              where: {
+                createdAt: {
+                  [Op.gte]: date,
+                },
+              },
+            };
+          },
+        },
+        hooks: {
+          beforeValidate: (customer, options) => {
+            customer.status = "ARCHIVED";
           },
         },
       }

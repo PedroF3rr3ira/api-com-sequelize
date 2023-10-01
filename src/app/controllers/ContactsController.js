@@ -4,7 +4,7 @@ import { parseISO } from "date-fns";
 import Customer from "../models/Customer";
 import Contact from "../models/Contact";
 
-class CustomersController {
+class ContactsController {
   // Listagem
   async index(req, res) {
     const {
@@ -21,7 +21,7 @@ class CustomersController {
     const page = req.query.page || 1;
     const limit = req.query.limit || 25;
 
-    let where = {};
+    let where = { customer_id: req.params.customerId };
     let order = [];
 
     if (name) {
@@ -84,12 +84,13 @@ class CustomersController {
       order = sort.split(",").map((item) => item.split(":"));
     }
 
-    const data = await Customer.findAll({
+    const data = await Contact.findAll({
       where,
       include: [
         {
-          model: Contact,
+          model: Customer,
           attributes: ["id", "status"],
+          required: true,
         },
       ],
       order,
@@ -101,13 +102,15 @@ class CustomersController {
   }
 
   async show(req, res) {
-    const customer = await Customer.findByPk(req.params.id);
+    const contact = await Contact.findByPk(req.params.id, {
+      include: [Customer],
+    });
 
-    if (!customer) {
+    if (!contact) {
       return res.status(404).json();
     }
 
-    return res.json(customer);
+    return res.json(contact);
   }
 
   async create(req, res) {
@@ -161,4 +164,4 @@ class CustomersController {
   }
 }
 
-export default new CustomersController();
+export default new ContactsController();
