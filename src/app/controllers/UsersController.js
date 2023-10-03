@@ -1,16 +1,13 @@
 import { Op } from "sequelize";
 import * as YUP from "yup";
 import { parseISO } from "date-fns";
-import Customer from "../models/Customer";
-import Contact from "../models/Contact";
+import User from "../models/User";
 
-class ContactsController {
-  // Listagem
+class UsersController {
   async index(req, res) {
     const {
       name,
       email,
-      status,
       createdBefore,
       createdAfter,
       updatedBefore,
@@ -21,7 +18,7 @@ class ContactsController {
     const page = req.query.page || 1;
     const limit = req.query.limit || 25;
 
-    let where = { customer_id: req.params.customerId };
+    let where = {};
     let order = [];
 
     if (name) {
@@ -37,14 +34,6 @@ class ContactsController {
         ...where,
         email: {
           [Op.iLike]: email,
-        },
-      };
-    }
-    if (status) {
-      where = {
-        ...where,
-        status: {
-          [Op.in]: status.split(",").map((item) => item.toUpperCase()),
         },
       };
     }
@@ -84,15 +73,11 @@ class ContactsController {
       order = sort.split(",").map((item) => item.split(":"));
     }
 
-    const data = await Contact.findAll({
+    const data = await User.findAll({
       where,
-      include: [
-        {
-          model: Customer,
-          attributes: ["id", "status"],
-          required: true,
-        },
-      ],
+      attributes: {
+        exclude: ["password_hash"],
+      },
       order,
       limit,
       offset: limit * page - limit,
@@ -102,88 +87,70 @@ class ContactsController {
   }
 
   async show(req, res) {
-    const contact = await Contact.findOne({
-      where: {
-        customer_id: req.params.customerId,
-        id: req.params.id,
-      },
-      attributes: {
-        exclude: ["customer_id", "CustomerId"],
-      },
-    });
+    const user = await User.findByPk(req.params.id);
 
-    if (!contact) {
-      return res.status(404).json();
-    }
+    if (!user) return res.status(404).json();
 
-    return res.json(contact);
+    return res.json(user);
   }
 
   async create(req, res) {
     const schema = YUP.object().shape({
       name: YUP.string().required(),
       email: YUP.string().email().required(),
-      status: YUP.string().uppercase(),
+      password: YUP.string().required().min(8),
+      passwordConfirmation: YUP.string().when("password", (password, field) =>
+        password ? field.required().oneOf([YUP.ref("password")]) : field
+      ),
     });
 
     if (!(await schema.isValid(req.body))) {
       return res.status(400).json({ error: "error on validate schema" });
     }
 
-    const contact = await Contact.create({
-      ...req.body,
-      customer_id: req.params.customerId,
-    });
+    const { id, name, email, createdAt, updatedAt } = await User.create(
+      req.body
+    );
 
-    return res.status(201).json(contact);
+    return res.status(201).json({ id, name, email, createdAt, updatedAt });
   }
 
   async update(req, res) {
     const schema = YUP.object().shape({
       name: YUP.string(),
       email: YUP.string().email(),
-      status: YUP.string().uppercase(),
+      oldPassword: YUP.string().min(8),
+      password: YUP.string()
+        .min(8)
+        .when("oldPassword", (oldPassword, field) =>
+          oldPassword ? field.required() : field
+        ),
+      passwordConfirmation: YUP.string().when("password", (password, field) =>
+        password ? field.required().oneOf([YUP.ref("password")]) : field
+      ),
     });
 
     if (!(await schema.isValid(req.body))) {
+      console.log(schema);
       return res.status(400).json({ error: "error on validate schema" });
     }
 
-    const contact = await Contact.findOne({
-      where: {
-        id: req.params.id,
-        customer_id: req.params.customerId,
-      },
-      attributes: {
-        exclude: ["customer_id", "CustomerId"],
-      },
-    });
+    const user = await User.findByPk(req.params.id);
 
-    if (!contact) {
-      return res.status(404).json();
+    if (!user) return res.status(404).json();
+
+    const { oldPassword } = req.body;
+
+    if (oldPassword && !(await user.checkPassword(oldPassword))) {
+      return res.status(401).json({ error: "user password not match" });
     }
 
-    (await contact).update(req.body);
+    const { id, name, email, createdAt, updatedAt } = await user.update(
+      req.body
+    );
 
-    return res.json(contact);
-  }
-
-  async destroy(req, res) {
-    const contact = await Contact.findOne({
-      where: {
-        id: req.params.id,
-        customer_id: req.params.customerId,
-      },
-    });
-
-    if (!contact) {
-      return res.status(404).json();
-    }
-
-    await contact.destroy();
-
-    return res.json();
+    return res.status(201).json({ id, name, email, createdAt, updatedAt });
   }
 }
 
-export default new ContactsController();
+export default new UsersController();
