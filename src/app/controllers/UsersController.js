@@ -91,7 +91,9 @@ class UsersController {
 
     if (!user) return res.status(404).json();
 
-    return res.json(user);
+    const { id, name, email, createdAt, updatedAt } = user;
+
+    return res.json({ id, name, email, createdAt, updatedAt });
   }
 
   async create(req, res) {
@@ -122,16 +124,17 @@ class UsersController {
       oldPassword: YUP.string().min(8),
       password: YUP.string()
         .min(8)
-        .when("oldPassword", (oldPassword, field) =>
-          oldPassword ? field.required() : field
-        ),
-      passwordConfirmation: YUP.string().when("password", (password, field) =>
-        password ? field.required().oneOf([YUP.ref("password")]) : field
-      ),
+        .when("oldPassword", {
+          is: (oldPassword) => oldPassword,
+          then: () => YUP.string().required(),
+        }),
+      passwordConfirmation: YUP.string().when("password", {
+        is: (password) => password,
+        then: (field) => field.required().oneOf([YUP.ref("password")]),
+      }),
     });
 
     if (!(await schema.isValid(req.body))) {
-      console.log(schema);
       return res.status(400).json({ error: "error on validate schema" });
     }
 
@@ -150,6 +153,16 @@ class UsersController {
     );
 
     return res.status(201).json({ id, name, email, createdAt, updatedAt });
+  }
+
+  async destroy(req, res) {
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) return res.status(404).json();
+
+    await user.destroy();
+
+    return res.json({ message: "successfully deleted user" });
   }
 }
 

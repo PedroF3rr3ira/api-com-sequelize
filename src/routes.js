@@ -3,8 +3,15 @@ import { Router } from "express";
 import customers from "./app/controllers/CustomersController";
 import contacts from "./app/controllers/ContactsController";
 import users from "./app/controllers/UsersController";
+import sessions from "./app/controllers/SessionsController";
+import auth from "./app/middlewares/auth";
 
 const routes = new Router();
+
+// Session route
+routes.post("/sessions", sessions.create);
+
+routes.use(auth);
 
 // Customers routes
 routes.get("/customers", customers.index);
@@ -25,6 +32,6 @@ routes.get("/users", users.index);
 routes.get("/users/:id", users.show);
 routes.post("/users", users.create);
 routes.put("/users/:id", users.update);
-// routes.delete("/users/:id", users.destroy);
+routes.delete("/users/:id", users.destroy);
 
 export default routes;
