@@ -17,6 +17,10 @@ class User extends Model {
           field: "updated_at",
           type: Sequelize.DATE,
         },
+        fileId: {
+          field: "file_id",
+          type: Sequelize.INTEGER,
+        },
       },
       {
         sequelize,
@@ -32,6 +36,12 @@ class User extends Model {
       if (user.password) {
         user.password_hash = await bcrypt.hash(user.password, 8);
       }
+    });
+  }
+
+  static associate(models) {
+    this.belongsTo(models.File, {
+      foreignKey: "file_id",
     });
   }
 

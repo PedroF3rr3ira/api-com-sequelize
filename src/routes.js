@@ -6,6 +6,7 @@ import customers from "./app/controllers/CustomersController";
 import contacts from "./app/controllers/ContactsController";
 import users from "./app/controllers/UsersController";
 import sessions from "./app/controllers/SessionsController";
+import files from "./app/controllers/FilesController";
 import auth from "./app/middlewares/auth";
 
 const routes = new Router();
@@ -38,8 +39,6 @@ routes.put("/users/:id", users.update);
 routes.delete("/users/:id", users.destroy);
 
 // Files
-routes.post("/files", upload.single("file"), (req, res) =>
-  res.json({ message: "aoba" })
-);
+routes.post("/files", upload.single("file"), files.create);
 
 export default routes;
