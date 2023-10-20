@@ -1,9 +1,9 @@
 module.exports = {
   dialect: "postgres",
-  host: "localhost",
-  username: "postgres",
-  password: "123",
-  database: "teste-js",
+  host: process.env.DB_HOST,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   define: {
     timestamp: true,
     undercored: true,
